@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Bind para MTA - Mudança de Cor</title>
+  <link rel="icon" href="jt.ico" type="image/x-icon">
+  <style>
+    /* Estilos CSS (mesmos estilos do código original) */
+    /* ... (estilos omitidos para brevidade) ... */
+  </style>
+  <style>
+     body {
+      font-family: Arial, sans-serif;
+      background-color: #1a1a1a;
+      color: #ffffff;
+      margin: 0;
+      padding: 0;
+    }
+
+    .Banner{
+        width: 100%;
+        height: 3rem;
+        background-color: #1a1a1a;
+        box-shadow: 0px 0px 10px rgba(255, 255, 255, 0.1);
+    }
+
+    .Banner img{
+        width: 8rem;
+        margin-top: 0.2rem;
+        margin-left: 1rem;
+    }
+    
+    .container {
+      max-width: 600px;
+      margin: 20px auto;
+      background-color: #292929;
+      padding: 20px;
+      box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+      border-radius: 5px;
+      display: fel;
+    }
+ 
+
+
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+      color: #ffffff;
+    }
+
+    input[type="text"], input[type="color"], button {
+      margin: 5px;
+      padding: 10px;
+      font-size: 16px;
+      color: #ffffff;
+      background-color: #1a1a1a;
+    }
+
+    input[type="text"], input[type="color"] {
+      border: 1px solid #cccccc;
+      border-radius: 5px;
+    }
+
+    input[type="text"]:focus, input[type="color"]:focus, button:focus {
+      outline: none;
+      box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.1);
+    }
+
+    #apply-color-button, #undo-button, #copy-text-with-codes-button {
+      position: relative;
+      background-color: #1aadff;
+      color: #ffffff;
+      border: none;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      border-radius: 5px;
+      padding: 12px 20px;
+      overflow: hidden;
+    }
+
+    #apply-color-button::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 50%;
+      width: 100%;
+      height: 100%;
+      background-color: inherit;
+      transform: translateX(-50%);
+      z-index: -1;
+    }
+
+    #apply-color-button:hover, #undo-button:hover, #copy-text-with-codes-button:hover {
+      background-color: #0088cc;
+    }
+
+    #apply-color-button:active, #undo-button:active, #copy-text-with-codes-button:active {
+      background-color: #006699;
+    }
+
+    .text-output-container {
+      margin-top: 20px;
+      border: 1px solid #cccccc;
+      border-radius: 5px;
+      padding: 10px;
+      font-size: 18px;
+      line-height: 1.5;
+      color: #ffffff;
+    }
+
+    .text-output-container span.color-code {
+      font-size: 14px;
+      margin-right: 5px;
+      opacity: 0.7;
+    }
+
+    .text-without-colors-container {
+      margin-top: 20px;
+      border: 1px solid #cccccc;
+      border-radius: 5px;
+      padding: 10px;
+      font-size: 18px;
+      line-height: 1.5;
+      background-color: #1a1a1a;
+      color: #ffffff;
+    }
+
+    .text-without-colors-container span.color-code {
+      display: none;
+    }
+
+    .message {
+      text-align: center;
+      margin-top: 10px;
+      color: #dddddd;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="Banner">
+    <img src="jaga.png" alt="jaga">
+  </div>
+  <div class="container">
+    <div style="position: relative;">
+      <input type="text" id="text-input" placeholder="Digite seu texto aqui">
+      <img class="binds" src="binds.png" alt="Imagem" style="position: absolute; top: 0.2rem; right: 1rem; width: 3rem;">
+    </div>
+    <div class="text-output-container" id="text-output"></div>
+    <input type="color" id="color-picker">
+    <button id="apply-color-button">Aplicar Cor</button>
+    <button id="undo-button">Desfazer</button>
+    <div class="text-without-colors-container" id="text-without-colors"></div>
+    <button id="copy-text-with-codes-button">Copiar Bind</button>
+  </div>
+
+  <script>
+    const textInput = document.getElementById('text-input');
+    const textOutputContainer = document.getElementById('text-output');
+    const colorPicker = document.getElementById('color-picker');
+    const applyColorButton = document.getElementById('apply-color-button');
+    const undoButton = document.getElementById('undo-button');
+    const textWithoutColorsContainer = document.getElementById('text-without-colors');
+    const copyTextWithCodesButton = document.getElementById('copy-text-with-codes-button');
+
+    let history = [];
+
+    textInput.addEventListener('input', updateText);
+    applyColorButton.addEventListener('click', applyColorToSelectedText);
+    undoButton.addEventListener('click', undoLastAction);
+    copyTextWithCodesButton.addEventListener('click', copyTextWithCodes);
+
+    function updateText() {
+      const newText = textInput.value;
+      textOutputContainer.innerHTML = newText;
+      textWithoutColorsContainer.innerHTML = removeColorCodes(newText);
+    }
+
+    function applyColorToSelectedText() {
+      const selection = window.getSelection();
+      const selectedText = selection.toString().trim();
+      const containerRange = document.createRange();
+      containerRange.selectNodeContents(textOutputContainer);
+
+      if (containerRange.isPointInRange(selection.anchorNode, selection.anchorOffset) &&
+          containerRange.isPointInRange(selection.focusNode, selection.focusOffset) &&
+          selectedText !== '') {
+        const color = colorPicker.value;
+        const range = selection.getRangeAt(0);
+        const span = document.createElement('span');
+        span.style.color = color;
+        span.innerHTML = `<span class="color-code" style="color:${color};">${color}</span>${selectedText}`;
+
+        const prevState = textOutputContainer.innerHTML;
+        const prevSelection = saveSelection();
+
+        range.deleteContents();
+        range.insertNode(span);
+        selection.removeAllRanges();
+
+        history.push({ state: prevState, selection: prevSelection });
+        textWithoutColorsContainer.innerHTML = removeColorCodes(textOutputContainer.innerHTML);
+      }
+    }
+
+    function undoLastAction() {
+      if (history.length > 0) {
+        const lastAction = history.pop();
+        textOutputContainer.innerHTML = lastAction.state;
+        restoreSelection(lastAction.selection);
+        textWithoutColorsContainer.innerHTML = removeColorCodes(lastAction.state);
+      }
+    }
+
+    function saveSelection() {
+      const selection = window.getSelection();
+      const ranges = [];
+      for (let i = 0; i < selection.rangeCount; i++) {
+        ranges.push(selection.getRangeAt(i));
+      }
+      return ranges;
+    }
+
+    function restoreSelection(savedSelection) {
+      const selection = window.getSelection();
+      selection.removeAllRanges();
+      for (let i = 0; i < savedSelection.length; i++) {
+        selection.addRange(savedSelection[i]);
+      }
+    }
+
+    function removeColorCodes(text) {
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = text;
+      const colorCodes = tempDiv.querySelectorAll('.color-code');
+      colorCodes.forEach((colorCode) => colorCode.parentNode.removeChild(colorCode));
+      return tempDiv.innerHTML;
+    }
+
+    function copyTextWithCodes() {
+      const range = document.createRange();
+      range.selectNode(textOutputContainer);
+      window.getSelection().removeAllRanges();
+      window.getSelection().addRange(range);
+      document.execCommand('copy');
+      window.getSelection().removeAllRanges();
+      alert('Texto com códigos de cor copiado para a área de transferência!');
+    }
+  </script>
+</body>
+</html>
